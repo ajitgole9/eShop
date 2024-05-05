@@ -1,10 +1,21 @@
 ﻿using Catalog.API.Exceptions;
-using Catalog.API.Products.GetProductById;
 
 namespace Catalog.API.Products.UpdateProduct;
 
 public record UpdateProductCommand(Guid Id, string Name, string Description, List<string> Categories, string Image, decimal Price) : ICommand<UpdateProductResult>;
 public record UpdateProductResult(bool IsSuccess);
+
+public class UpdateProductCommandValidator : AbstractValidator<UpdateProductCommand>
+{
+    public UpdateProductCommandValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Id is Required");
+        RuleFor(x => x.Name).NotEmpty().WithMessage("Name is Required");
+        RuleFor(x => x.Categories).NotEmpty().WithMessage("Categories is Required");
+        RuleFor(x => x.Image).NotEmpty().WithMessage("Image is Required");
+        RuleFor(x => x.Price).GreaterThan(0).WithMessage("Price must be greater than 0");
+    }
+}
 public class UpdateProductCommandHandler(IDocumentSession session, ILogger<UpdateProductCommand> logger) : ICommandHandler<UpdateProductCommand, UpdateProductResult>
 {
     public async Task<UpdateProductResult> Handle(UpdateProductCommand command, CancellationToken cancellationToken)
@@ -15,7 +26,7 @@ public class UpdateProductCommandHandler(IDocumentSession session, ILogger<Updat
 
         if (product is null)
         {
-            throw new ProductNotFoundException();
+            throw new ProductNotFoundException(command.Id);
         }
 
         product.Name = command.Name;
